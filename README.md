@@ -9,14 +9,16 @@ is reachable or not.
 The tool is written in Python and uses the `os` and `subprocess` modules to
 execute the ping command.
 
-The project is available on [GitHub](https://github.com/aviram598/monitoring-ip-addresses).
+It has zero dependency on 3rd party packages (till now).
+
+The project is available on [GitHub](https://github.com/saiprasad1996/ipmon.git).
 
 How to use
 ------------
 
 1. Clone the repository:
 
-    git clone 
+    git clone https://github.com/saiprasad1996/ipmon.git
 
 2. Install the requirements:
 
