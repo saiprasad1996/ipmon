@@ -28,30 +28,43 @@ def ping_ip(ip):
         return ip, "Offline"
 
 # Function to update IP status in the UI
-def update_status(ip_list, status_labels, last_checked_label, polling_status_label):
+def update_status(ip_list, status_labels, last_checked_label, polling_status_label, online_count_label, offline_count_label):
     global is_polling
     while is_polling:
+        online_count = 0
+        offline_count = 0
+
         with ThreadPoolExecutor(max_workers=MAX_THREADS) as executor:
             futures = {executor.submit(ping_ip, ip): ip for ip in ip_list}
             for future in as_completed(futures):
                 ip, status = future.result()
                 index = ip_list.index(ip)
                 status_labels[index].config(text=status, foreground=("green" if status == "Online" else "red"))
-        
+
+                if status == "Online":
+                    online_count += 1
+                else:
+                    offline_count += 1
+
+        # Update online and offline counts
+        online_count_label.config(text=f"Online Devices: {online_count}")
+        offline_count_label.config(text=f"Offline Devices: {offline_count}")
+
+        # Update the last checked time
         last_checked = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         last_checked_label.config(text=f"Last Checked: {last_checked}")
-        
+
         time.sleep(30)
-    
+
     polling_status_label.config(text="Polling Stopped", foreground="red")
 
 # Function to start pinging
-def start_pinging(ip_list, status_labels, last_checked_label, polling_status_label):
+def start_pinging(ip_list, status_labels, last_checked_label, polling_status_label, online_count_label, offline_count_label):
     global is_polling
     if not is_polling:
         is_polling = True
         polling_status_label.config(text="Polling in Progress", foreground="green")
-        ping_thread = threading.Thread(target=update_status, args=(ip_list, status_labels, last_checked_label, polling_status_label))
+        ping_thread = threading.Thread(target=update_status, args=(ip_list, status_labels, last_checked_label, polling_status_label, online_count_label, offline_count_label))
         ping_thread.daemon = True
         ping_thread.start()
 
@@ -127,24 +140,31 @@ def create_ui(ip_list):
         status_label.grid(row=i+1, column=1, padx=10, pady=5)
         status_labels.append(status_label)
 
+    # Labels to show statistics
+    online_count_label = ttk.Label(main_frame, text="Online Devices: 0")
+    online_count_label.grid(row=1, column=0, padx=5, pady=5, sticky=tk.W)
+
+    offline_count_label = ttk.Label(main_frame, text="Offline Devices: 0")
+    offline_count_label.grid(row=1, column=1, padx=5, pady=5, sticky=tk.W)
+
     # Label to show last checked date and time
     last_checked_label = ttk.Label(main_frame, text="Last Checked: Not yet checked")
-    last_checked_label.grid(row=1, column=0, columnspan=2, pady=5)
+    last_checked_label.grid(row=2, column=0, columnspan=2, pady=5)
 
     # Polling status label
     polling_status_label = ttk.Label(main_frame, text="Polling Stopped", foreground="red")
-    polling_status_label.grid(row=2, column=0, columnspan=2, pady=5)
+    polling_status_label.grid(row=3, column=0, columnspan=2, pady=5)
 
     # Start and Stop buttons
-    start_button = ttk.Button(main_frame, text="Start", command=lambda: start_pinging(ip_list, status_labels, last_checked_label, polling_status_label))
-    start_button.grid(row=3, column=0, pady=10)
+    start_button = ttk.Button(main_frame, text="Start", command=lambda: start_pinging(ip_list, status_labels, last_checked_label, polling_status_label, online_count_label, offline_count_label))
+    start_button.grid(row=4, column=0, pady=10)
 
     stop_button = ttk.Button(main_frame, text="Stop", command=lambda: stop_pinging(polling_status_label))
-    stop_button.grid(row=3, column=1, pady=10)
+    stop_button.grid(row=4, column=1, pady=10)
 
     # Signature label
     signature_label = ttk.Label(main_frame, text="Designed and Developed by Epsum Labs Private Limited", foreground="blue", font=("Arial", 8))
-    signature_label.grid(row=4, column=0, columnspan=2, pady=10)
+    signature_label.grid(row=5, column=0, columnspan=2, pady=10)
 
     # Bind mousewheel event for scrolling
     root.bind_all("<MouseWheel>", lambda e: canvas.yview_scroll(int(-1*(e.delta/120)), "units"))
